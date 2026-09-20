@@ -12,5 +12,5 @@ type Neuron struct {
 }
 
 func (n *Neuron) SetResult(result float64) {
-	n.Result = math.Tan(result) + n.Bias
+	n.Result = math.Tanh(result + n.Bias)
 }

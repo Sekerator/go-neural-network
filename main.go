@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
+	"math"
 	"neural_network/internal"
 	"neural_network/internal/services"
 	"os"
+	"strconv"
 )
 
 func main() {
@@ -109,6 +112,12 @@ func main() {
 		{{3, 24}, {1}},
 		{{23, 69}, {1}},
 		{{26, 52}, {1}},
+		{{5001, 5000}, {-1}},
+		{{5000, 5001}, {1}},
+		{{9999, 9998}, {-1}},
+		{{9998, 9999}, {1}},
+		{{10001, 10000}, {-1}},
+		{{10000, 10001}, {1}},
 
 		{{10, 10}, {0}},
 		{{1, 1}, {0}},
@@ -132,11 +141,37 @@ func main() {
 		{{30, 30}, {0}},
 	}
 
-	err = handler.Train(10000, trainData)
+	file, err := os.Open("train-data.csv")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	reader.Comma = ';'
+
+	records, err := reader.ReadAll()
 	if err != nil {
 		panic(err)
 	}
 
+	for _, row := range records {
+		a, _ := strconv.ParseFloat(row[0], 64)
+		b, _ := strconv.ParseFloat(row[1], 64)
+		result, _ := strconv.ParseFloat(row[2], 64)
+
+		trainData = append(trainData, [][]float64{{a, b}, {result}})
+	}
+
+	iterCount := 10000
+	fmt.Print("Введите количество итераций обучения: ")
+	fmt.Fscan(os.Stdin, &iterCount)
+	err = handler.Train(iterCount, trainData)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println()
 	for {
 		var num1 float64
 		var num2 float64
@@ -152,6 +187,22 @@ func main() {
 		}
 
 		results := handler.GetResult([]float64{num1, num2})
-		fmt.Println(results)
+		fmt.Print("Результат: ")
+		if math.Round(results[0]) == 1 {
+			fmt.Println("Цифра 2 больше")
+			fmt.Println(results[0])
+			fmt.Println(math.Round(results[0]))
+		} else if math.Round(results[0]) == 0 {
+			fmt.Println("Равны")
+			fmt.Println(results[0])
+			fmt.Println(math.Round(results[0]))
+		} else if math.Round(results[0]) == -1 {
+			fmt.Println("Цифра 1 больше")
+			fmt.Println(results[0])
+			fmt.Println(math.Round(results[0]))
+		} else {
+			fmt.Println(results[0])
+			fmt.Println(math.Round(results[0]))
+		}
 	}
 }

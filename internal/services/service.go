@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 	"neural_network/internal/models"
 )
@@ -50,7 +51,7 @@ func (n *Nn) Init() error {
 	}
 
 	for i := range n.data.HiddenLayerCount {
-		for range n.data.HiddenNeuronCount {
+		for range n.data.HiddenNeuronCount[i] {
 			n.Neurons[neuronId] = &models.Neuron{
 				ID:     neuronId,
 				Result: 0,
@@ -150,7 +151,6 @@ func (n *Nn) GetResults() []float64 {
 	n.CalculateResults()
 
 	var results []float64
-	results = make([]float64, n.data.OutputNeuronCount)
 
 	for _, neuronId := range n.OutputNeurons {
 		results = append(results, n.Neurons[neuronId].Result)
@@ -228,6 +228,17 @@ func (n *Nn) SetInput(inputData []float64) error {
 			len(inputData),
 			len(n.InputNeurons),
 		)
+	}
+
+	maxInput := 0.0
+	for _, value := range inputData {
+		maxInput = math.Max(maxInput, math.Abs(value))
+	}
+
+	if maxInput != 0 {
+		for i := range inputData {
+			inputData[i] /= maxInput
+		}
 	}
 
 	i := 0
