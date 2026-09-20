@@ -1,22 +1,51 @@
 package services
 
-import "neural_network/internal/models"
+import "errors"
 
 type BackpropagationNn struct {
-	data          NnInitData
-	inputNeurons  map[int]models.Neuron
-	outputNeurons map[int]models.Neuron
-	hiddenLayers  map[int]map[int]models.Neuron
+	*Nn
 }
 
-func NewBackpropagationNn(data NnInitData) NnService {
+func NewBackpropagationNn(data NnInitData) *BackpropagationNn {
 	return &BackpropagationNn{
-		data: data,
+		Nn: NewNn(data),
 	}
 }
 
-func (n *BackpropagationNn)
+func (n *BackpropagationNn) Train(expectedData []float64) error {
+	if len(expectedData) != n.data.OutputNeuronCount {
+		return errors.New("expected data length must be equal to output length")
+	}
 
-func (n *BackpropagationNn) Init(data NnInitData) {
+	n.CalculateResults()
 
+	neuronErrors := make(map[int]float64)
+	i := 0
+	for _, neuronId := range n.OutputNeurons {
+		neuronErrors[neuronId] = (n.Neurons[neuronId].Result - expectedData[i]) * (1 - (n.Neurons[neuronId].Result * n.Neurons[neuronId].Result))
+		i++
+
+		for _, synapseId := range n.Neurons[neuronId].LeftSynapseIDs {
+			n.Synapses[synapseId].Weight -= n.data.MutationWeightRate * neuronErrors[neuronId] * n.Neurons[n.Synapses[synapseId].LeftNeuronID].Result
+		}
+		n.Neurons[neuronId].Bias -= n.data.MutationBiasRate * neuronErrors[neuronId]
+	}
+
+	for i = n.data.HiddenLayerCount - 1; i >= 0; i-- {
+		for _, neuronId := range n.HiddenLayers[i] {
+			outputErrors := 0.0
+			for _, synapseId := range n.Neurons[neuronId].RightSynapseIDs {
+				outputErrors += n.Synapses[synapseId].Weight * neuronErrors[n.Synapses[synapseId].RightNeuronID]
+			}
+
+			neuronErrors[neuronId] = (1 - (n.Neurons[neuronId].Result * n.Neurons[neuronId].Result)) * outputErrors
+
+			for _, synapseId := range n.Neurons[neuronId].LeftSynapseIDs {
+				n.Synapses[synapseId].Weight -= n.data.MutationWeightRate * neuronErrors[neuronId] * n.Neurons[n.Synapses[synapseId].LeftNeuronID].Result
+			}
+			n.Neurons[neuronId].Bias -= n.data.MutationBiasRate * neuronErrors[neuronId]
+		}
+	}
+
+	return nil
 }

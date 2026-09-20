@@ -1,5 +1,7 @@
 package models
 
+import "math"
+
 type Neuron struct {
 	ID     int
 	Result float64
@@ -7,4 +9,8 @@ type Neuron struct {
 
 	LeftSynapseIDs  []int
 	RightSynapseIDs []int
+}
+
+func (n *Neuron) SetResult(result float64) {
+	n.Result = math.Tan(result) + n.Bias
 }
