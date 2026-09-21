@@ -32,6 +32,10 @@ func (n *Nn) Init() error {
 		return errors.New("input neuron count cannot be zero")
 	}
 
+	if n.data.HiddenLayerCount != len(n.data.HiddenNeuronCount) {
+		return errors.New("hidden layer count not equal to hidden neuron count")
+	}
+
 	n.HiddenLayers = make(map[int][]int)
 	n.Neurons = make(map[int]*models.Neuron)
 	n.Synapses = make(map[int]*models.Synapse)

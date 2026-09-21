@@ -13,8 +13,8 @@ import (
 func main() {
 	data := services.NnInitData{
 		InputNeuronCount:  2,
-		HiddenLayerCount:  2,
-		HiddenNeuronCount: []int{4, 2},
+		HiddenLayerCount:  3,
+		HiddenNeuronCount: []int{6, 4, 2},
 		OutputNeuronCount: 1,
 
 		MutationBiasChance:   10,
@@ -156,9 +156,13 @@ func main() {
 	}
 
 	for _, row := range records {
-		a, _ := strconv.ParseFloat(row[0], 64)
-		b, _ := strconv.ParseFloat(row[1], 64)
-		result, _ := strconv.ParseFloat(row[2], 64)
+		var a, b, result float64
+		a, err = strconv.ParseFloat(row[0], 64)
+		b, err = strconv.ParseFloat(row[1], 64)
+		result, err = strconv.ParseFloat(row[2], 64)
+		if err != nil {
+			panic(err)
+		}
 
 		trainData = append(trainData, [][]float64{{a, b}, {result}})
 	}
