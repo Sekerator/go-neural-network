@@ -21,8 +21,9 @@ func (h *Handler) CreateEvolutionNn(count int) (map[int]*Brain, error) {
 	h.brains = make(map[int]*Brain, count)
 
 	for i := range count {
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
+			defer wg.Done()
 			sc.Lock()
 			h.brains[i] = &Brain{
 				ID: i,
@@ -32,7 +33,6 @@ func (h *Handler) CreateEvolutionNn(count int) (map[int]*Brain, error) {
 			if err != nil {
 				errorsList = append(errorsList, err)
 			}
-			wg.Done()
 			sc.Unlock()
 		}()
 	}
@@ -55,13 +55,13 @@ func (h *Handler) SetInputAllEvolutionNn(input []float64) error {
 	var wg sync.WaitGroup
 
 	for _, brain := range h.brains {
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
+			defer wg.Done()
 			err := brain.nn.SetInput(input)
 			if err != nil {
 				errorsList = append(errorsList, err)
 			}
-			wg.Done()
 		}()
 	}
 
@@ -125,17 +125,18 @@ func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
 	counter := -1
 	for _, item := range items {
 		counter++
-		go func() {
-			wg.Add(1)
-			if counter < len(items)/10 {
-			} else if counter < len(items)/2 {
+		wg.Add(1)
+		go func(counterGo int) {
+			defer wg.Done()
+			if counterGo < len(items)/10 {
+			} else if counterGo < len(items)/2 {
 				err := h.brains[item.Key].nn.Mutate()
 				if err != nil {
 					sc.Lock()
 					errorsList = append(errorsList, err)
 					sc.Unlock()
 				}
-			} else if counter < len(items) {
+			} else if counterGo < len(items) {
 				err := h.CrossEvolutionNn(item.Key, rand.Intn(len(h.brains)), 50)
 				if err != nil {
 					sc.Lock()
@@ -143,8 +144,7 @@ func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
 					sc.Unlock()
 				}
 			}
-			wg.Done()
-		}()
+		}(counter)
 	}
 
 	wg.Wait()

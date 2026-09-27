@@ -13,6 +13,10 @@ import (
 )
 
 func main() {
+	evolutionTest()
+}
+
+func evolutionTest() {
 	var wg sync.WaitGroup
 	var sc sync.Mutex
 
@@ -72,21 +76,25 @@ func main() {
 		fmt.Println(i)
 		scoreBoard := make(map[int]float64, len(brains))
 
+		for id, _ := range brains {
+			scoreBoard[id] = 0
+		}
+
 		for id, brain := range brains {
+			wg.Add(1)
 			go func() {
-				wg.Add(1)
+				defer wg.Done()
 				for _, tdata := range trainData {
 					results, err := brain.GetResult(tdata[0])
 					if err != nil {
 						panic(err)
 					}
-					if math.Round(results[0]) != tdata[1][0] {
+					if math.Round(results[0]) == tdata[1][0] {
 						sc.Lock()
 						scoreBoard[id]++
 						sc.Unlock()
 					}
 				}
-				wg.Done()
 			}()
 		}
 		wg.Wait()
@@ -100,8 +108,9 @@ func main() {
 	scoreBoard := make(map[int]float64, len(brains))
 
 	for id, brain := range brains {
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
+			defer wg.Done()
 			for _, tdata := range trainData {
 				results, err := brain.GetResult(tdata[0])
 				if err != nil {
@@ -113,7 +122,6 @@ func main() {
 					sc.Unlock()
 				}
 			}
-			wg.Done()
 		}()
 	}
 	wg.Wait()
