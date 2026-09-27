@@ -11,8 +11,8 @@ type NnInitData struct {
 	HiddenNeuronCount []int
 	OutputNeuronCount int
 
-	MutationBiasChance   int // for evolution
-	MutationWeightChance int // for evolution
+	MutationBiasChance   int
+	MutationWeightChance int
 
 	MutationBiasRate   float64
 	MutationWeightRate float64

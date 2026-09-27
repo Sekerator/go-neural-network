@@ -133,9 +133,6 @@ func (h *Handler) CrossEvolutionNn(intoId, fromId, fromIdDominationChance int) e
 	return nil
 }
 
-// TrainEvolutionNn runs one generation. scoreBoard must contain a score for every brain,
-// a higher score means a better brain. The best 10% (at least one) are kept, the rest
-// of the first half is mutated and the second half is crossed with the best ones.
 func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
 	var errorsList []error
 	var wg sync.WaitGroup
@@ -164,8 +161,6 @@ func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
 		return items[i].Value > items[j].Value
 	})
 
-	// Top brains are neither mutated nor crossed in this generation,
-	// so they can be read concurrently as crossing donors.
 	top := items[:max(1, len(items)/10)]
 	mutateCount := max(len(top), len(items)/2)
 

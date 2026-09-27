@@ -140,7 +140,6 @@ func evolutionTest() {
 	}
 }
 
-// scoreBrains returns the number of correct answers for every brain.
 func scoreBrains(brains map[int]*internal.Brain, trainData [][][]float64) map[int]float64 {
 	var wg sync.WaitGroup
 	var sc sync.Mutex
