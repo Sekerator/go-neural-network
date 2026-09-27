@@ -13,7 +13,7 @@ type Brain struct {
 	nn *services.EvolutionNn
 }
 
-func (h *Handler) CreateEvolutionNn(count int) (map[int]*Brain, error) {
+func (h *Handler) CreateEvolutionNn(count int) (map[int]*Brain, []error) {
 	var errorsList []error
 	var wg sync.WaitGroup
 	var sc sync.Mutex
@@ -24,35 +24,47 @@ func (h *Handler) CreateEvolutionNn(count int) (map[int]*Brain, error) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			sc.Lock()
-			h.brains[i] = &Brain{
+
+			brain := &Brain{
 				ID: i,
-				nn: services.NewEvolutionNn(h.data),
+				nn: nil,
 			}
-			err := h.brains[i].nn.Init()
+
+			brain.nn = services.NewEvolutionNn(h.data)
+
+			err := brain.nn.Init()
 			if err != nil {
+				sc.Lock()
 				errorsList = append(errorsList, err)
+				sc.Unlock()
 			}
+
+			sc.Lock()
+			h.brains[i] = brain
 			sc.Unlock()
+
 		}()
 	}
 
 	wg.Wait()
 
 	if len(errorsList) > 0 {
-		return nil, errorsList[0]
+		return nil, errorsList
 	}
 
 	return h.brains, nil
 }
 
-func (h *Handler) SetInputAllEvolutionNn(input []float64) error {
+func (h *Handler) SetInputAllEvolutionNn(input []float64) []error {
+	var errorsList []error
+
 	if len(h.brains) == 0 {
-		return errors.New("no brains")
+		errorsList = append(errorsList, errors.New("no brains"))
+		return errorsList
 	}
 
-	var errorsList []error
 	var wg sync.WaitGroup
+	var sc sync.Mutex
 
 	for _, brain := range h.brains {
 		wg.Add(1)
@@ -60,7 +72,9 @@ func (h *Handler) SetInputAllEvolutionNn(input []float64) error {
 			defer wg.Done()
 			err := brain.nn.SetInput(input)
 			if err != nil {
+				sc.Lock()
 				errorsList = append(errorsList, err)
+				sc.Unlock()
 			}
 		}()
 	}
@@ -68,7 +82,7 @@ func (h *Handler) SetInputAllEvolutionNn(input []float64) error {
 	wg.Wait()
 
 	if len(errorsList) > 0 {
-		return errorsList[0]
+		return errorsList
 	}
 
 	return nil
@@ -87,22 +101,22 @@ func (b *Brain) Mutate() error {
 	return b.nn.Mutate()
 }
 
-func (h *Handler) CrossEvolutionNn(intoId, fromId, fromIdDominationChance int) error {
+func (h *Handler) CrossEvolutionNn(intoBrain, fromBrain Brain, fromIdDominationChance int) error {
 	if len(h.brains) == 0 {
 		return errors.New("no brains")
 	}
 
-	nn, err := services.Cross(*h.brains[intoId].nn, *h.brains[fromId].nn, fromIdDominationChance)
+	nn, err := services.Cross(*intoBrain.nn, *fromBrain.nn, fromIdDominationChance)
 	if err != nil {
 		return err
 	}
 
-	h.brains[intoId].nn = &nn
+	h.brains[intoBrain.ID].nn = &nn
 
 	return nil
 }
 
-func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
+func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) []error {
 	var errorsList []error
 	var wg sync.WaitGroup
 	var sc sync.Mutex
@@ -119,8 +133,14 @@ func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
 	}
 
 	sort.Slice(items, func(i, j int) bool {
-		return items[i].Value < items[j].Value
+		return items[i].Value > items[j].Value
 	})
+
+	top := items[:len(items)/10]
+	topBrains := make([]Brain, len(top))
+	for i := range topBrains {
+		topBrains[i] = *h.brains[top[i].Key]
+	}
 
 	counter := -1
 	for _, item := range items {
@@ -137,7 +157,7 @@ func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
 					sc.Unlock()
 				}
 			} else if counterGo < len(items) {
-				err := h.CrossEvolutionNn(item.Key, rand.Intn(len(h.brains)), 50)
+				err := h.CrossEvolutionNn(*h.brains[item.Key], topBrains[rand.Intn(len(top))], 50)
 				if err != nil {
 					sc.Lock()
 					errorsList = append(errorsList, err)
@@ -150,7 +170,7 @@ func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
 	wg.Wait()
 
 	if len(errorsList) > 0 {
-		return errorsList[0]
+		return errorsList
 	}
 
 	return nil

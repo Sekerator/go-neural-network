@@ -26,7 +26,7 @@ func (n *EvolutionNn) Mutate() error {
 	}
 
 	for _, synapse := range n.Synapses {
-		if rand.Intn(101) < n.data.MutationWeightChance {
+		if rand.Intn(100) < n.data.MutationWeightChance {
 			synapse.Weight += (rand.Float64() - 0.5) * n.data.MutationWeightRate
 		}
 	}

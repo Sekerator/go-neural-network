@@ -30,7 +30,6 @@ func (h *Handler) TrainBackpropagationNn(iterationCount int, data [][][]float64)
 				return err
 			}
 
-			h.backpropagationNn.CalculateResults()
 			err = h.backpropagationNn.Train(v[1])
 			if err != nil {
 				return err

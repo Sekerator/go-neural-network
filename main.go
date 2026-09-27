@@ -34,9 +34,9 @@ func evolutionTest() {
 	}
 
 	handler := internal.NewHandler(data)
-	brains, err := handler.CreateEvolutionNn(10000)
-	if err != nil {
-		panic(err)
+	brains, errors := handler.CreateEvolutionNn(10000)
+	if errors != nil {
+		panic(errors)
 	}
 
 	var trainData [][][]float64
@@ -99,9 +99,9 @@ func evolutionTest() {
 		}
 		wg.Wait()
 
-		err = handler.TrainEvolutionNn(scoreBoard)
-		if err != nil {
-			panic(err)
+		errors = handler.TrainEvolutionNn(scoreBoard)
+		if errors != nil {
+			panic(errors)
 		}
 	}
 

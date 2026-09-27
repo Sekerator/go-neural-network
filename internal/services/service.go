@@ -28,8 +28,8 @@ func (n *Nn) Init() error {
 	neuronId := 0
 	synapseId := 0
 
-	if n.data.InputNeuronCount == 0 || n.data.OutputNeuronCount == 0 {
-		return errors.New("input neuron count cannot be zero")
+	if n.data.InputNeuronCount <= 0 || n.data.OutputNeuronCount <= 0 {
+		return errors.New("input neuron count cannot be zero and negative")
 	}
 
 	if n.data.HiddenLayerCount != len(n.data.HiddenNeuronCount) {
@@ -229,14 +229,17 @@ func (n *Nn) Clone() *Nn {
 	return clone
 }
 
-func (n *Nn) SetInput(inputData []float64) error {
-	if len(inputData) != len(n.InputNeurons) {
+func (n *Nn) SetInput(inputDataOriginal []float64) error {
+	if len(inputDataOriginal) != len(n.InputNeurons) {
 		return fmt.Errorf(
 			"input data length %d does not match number of input neurons %d",
-			len(inputData),
+			len(inputDataOriginal),
 			len(n.InputNeurons),
 		)
 	}
+
+	inputData := make([]float64, len(inputDataOriginal))
+	copy(inputData, inputDataOriginal)
 
 	maxInput := 0.0
 	for _, value := range inputData {
