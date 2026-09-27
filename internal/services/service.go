@@ -45,6 +45,7 @@ func (n *Nn) Init() error {
 			ID:     neuronId,
 			Result: 0,
 			Bias:   rand.Float64() - 0.5,
+			Type:   models.INPUT_NEURON,
 
 			RightSynapseIDs: make([]int, 0),
 			LeftSynapseIDs:  make([]int, 0),
@@ -60,6 +61,7 @@ func (n *Nn) Init() error {
 				ID:     neuronId,
 				Result: 0,
 				Bias:   rand.Float64() - 0.5,
+				Type:   models.HIDDEN_NEURON,
 
 				RightSynapseIDs: make([]int, 0),
 				LeftSynapseIDs:  make([]int, 0),
@@ -75,6 +77,7 @@ func (n *Nn) Init() error {
 			ID:     neuronId,
 			Result: 0,
 			Bias:   rand.Float64() - 0.5,
+			Type:   models.OUTPUT_NEURON,
 
 			RightSynapseIDs: make([]int, 0),
 			LeftSynapseIDs:  make([]int, 0),
@@ -205,6 +208,7 @@ func (n *Nn) Clone() *Nn {
 			ID:              neuron.ID,
 			Result:          neuron.Result,
 			Bias:            neuron.Bias,
+			Type:            neuron.Type,
 			LeftSynapseIDs:  make([]int, len(neuron.LeftSynapseIDs)),
 			RightSynapseIDs: make([]int, len(neuron.RightSynapseIDs)),
 		}

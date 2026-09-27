@@ -7,8 +7,12 @@ import (
 type Handler struct {
 	data              services.NnInitData
 	backpropagationNn *services.BackpropagationNn
+
+	brains map[int]*Brain
 }
 
 func NewHandler(data services.NnInitData) *Handler {
-	return &Handler{data: data}
+	return &Handler{
+		data: data,
+	}
 }

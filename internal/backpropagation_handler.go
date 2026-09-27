@@ -1,6 +1,9 @@
 package internal
 
-import "neural_network/internal/services"
+import (
+	"errors"
+	"neural_network/internal/services"
+)
 
 func (h *Handler) CreateBackpropagationNn() error {
 	h.backpropagationNn = services.NewBackpropagationNn(h.data)
@@ -13,6 +16,13 @@ func (h *Handler) CreateBackpropagationNn() error {
 }
 
 func (h *Handler) TrainBackpropagationNn(iterationCount int, data [][][]float64) error {
+	if len(data) == 0 {
+		return errors.New("no data")
+	}
+	if h.backpropagationNn == nil {
+		return errors.New("no backpropagation nn")
+	}
+
 	for range iterationCount {
 		for _, v := range data {
 			err := h.backpropagationNn.SetInput(v[0])
@@ -31,11 +41,15 @@ func (h *Handler) TrainBackpropagationNn(iterationCount int, data [][][]float64)
 	return nil
 }
 
-func (h *Handler) GetResultBackpropagationNn(input []float64) []float64 {
-	err := h.backpropagationNn.SetInput(input)
-	if err != nil {
-		return nil
+func (h *Handler) GetResultBackpropagationNn(input []float64) ([]float64, error) {
+	if h.backpropagationNn == nil {
+		return nil, errors.New("no backpropagation nn")
 	}
 
-	return h.backpropagationNn.GetResults()
+	err := h.backpropagationNn.SetInput(input)
+	if err != nil {
+		return nil, err
+	}
+
+	return h.backpropagationNn.GetResults(), nil
 }
