@@ -13,7 +13,11 @@ type Brain struct {
 	nn *services.EvolutionNn
 }
 
-func (h *Handler) CreateEvolutionNn(count int) (map[int]*Brain, []error) {
+func (h *Handler) CreateEvolutionNn(count int) (map[int]*Brain, error) {
+	if count <= 0 {
+		return nil, errors.New("count must be greater than 0")
+	}
+
 	var errorsList []error
 	var wg sync.WaitGroup
 	var sc sync.Mutex
@@ -37,6 +41,7 @@ func (h *Handler) CreateEvolutionNn(count int) (map[int]*Brain, []error) {
 				sc.Lock()
 				errorsList = append(errorsList, err)
 				sc.Unlock()
+				return
 			}
 
 			sc.Lock()
@@ -49,18 +54,17 @@ func (h *Handler) CreateEvolutionNn(count int) (map[int]*Brain, []error) {
 	wg.Wait()
 
 	if len(errorsList) > 0 {
-		return nil, errorsList
+		return nil, errors.Join(errorsList...)
 	}
 
 	return h.brains, nil
 }
 
-func (h *Handler) SetInputAllEvolutionNn(input []float64) []error {
+func (h *Handler) SetInputAllEvolutionNn(input []float64) error {
 	var errorsList []error
 
 	if len(h.brains) == 0 {
-		errorsList = append(errorsList, errors.New("no brains"))
-		return errorsList
+		return errors.New("no brains")
 	}
 
 	var wg sync.WaitGroup
@@ -82,7 +86,7 @@ func (h *Handler) SetInputAllEvolutionNn(input []float64) []error {
 	wg.Wait()
 
 	if len(errorsList) > 0 {
-		return errorsList
+		return errors.Join(errorsList...)
 	}
 
 	return nil
@@ -116,10 +120,18 @@ func (h *Handler) CrossEvolutionNn(intoBrain, fromBrain Brain, fromIdDominationC
 	return nil
 }
 
-func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) []error {
+func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
 	var errorsList []error
 	var wg sync.WaitGroup
 	var sc sync.Mutex
+
+	if len(scoreBoard) == 0 {
+		return errors.New("empty scoreBoard")
+	}
+
+	if !sameKeys(scoreBoard, h.brains) {
+		return errors.New("not same keys")
+	}
 
 	type Item struct {
 		Key   int
@@ -136,7 +148,7 @@ func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) []error {
 		return items[i].Value > items[j].Value
 	})
 
-	top := items[:len(items)/10]
+	top := items[:max(1, len(items)/10)]
 	topBrains := make([]Brain, len(top))
 	for i := range topBrains {
 		topBrains[i] = *h.brains[top[i].Key]
@@ -170,8 +182,22 @@ func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) []error {
 	wg.Wait()
 
 	if len(errorsList) > 0 {
-		return errorsList
+		return errors.Join(errorsList...)
 	}
 
 	return nil
+}
+
+func sameKeys[A any, B any](a map[int]A, b map[int]B) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for k := range a {
+		if _, ok := b[k]; !ok {
+			return false
+		}
+	}
+
+	return true
 }
