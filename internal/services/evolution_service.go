@@ -2,8 +2,8 @@ package services
 
 import (
 	"errors"
+	"github.com/Sekerator/go-neural-network/internal/models"
 	"math/rand"
-	"neural_network/internal/models"
 )
 
 type EvolutionNn struct {

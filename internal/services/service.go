@@ -2,9 +2,9 @@ package services
 
 import (
 	"fmt"
+	"github.com/Sekerator/go-neural-network/internal/models"
 	"math"
 	"math/rand"
-	"neural_network/internal/models"
 )
 
 type Nn struct {

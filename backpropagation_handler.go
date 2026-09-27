@@ -1,8 +1,8 @@
-package internal
+package neuralnetwork
 
 import (
 	"errors"
-	"neural_network/internal/services"
+	"github.com/Sekerator/go-neural-network/internal/services"
 )
 
 func (h *Handler) CreateBackpropagationNn() error {

@@ -13,6 +13,7 @@
 
 - [Возможности](#возможности)
 - [Требования](#требования)
+- [Установка](#установка)
 - [Структура проекта](#структура-проекта)
 - [Быстрый старт](#быстрый-старт)
   - [Эволюционное обучение](#эволюционное-обучение)
@@ -40,25 +41,34 @@
 
 - Go **1.22** или новее
 
+## Установка
+
+```bash
+go get github.com/Sekerator/go-neural-network
+```
+
+```go
+import neuralnetwork "github.com/Sekerator/go-neural-network"
+```
+
+Имя пакета — `neuralnetwork`. Явный псевдоним в импорте не обязателен, но делает код понятнее,
+потому что путь модуля содержит дефисы.
+
 ## Структура проекта
 
 ```
 .
+├── handler.go                     # Handler, NnInitData — точка входа библиотеки
+├── evolution_handler.go           # популяция и эволюционное обучение
+├── backpropagation_handler.go     # обучение обратным распространением
 ├── internal/
-│   ├── handler.go                 # Handler — точка входа библиотеки
-│   ├── evolution_handler.go       # популяция и эволюционное обучение
-│   ├── backpropagation_handler.go # обучение обратным распространением
 │   ├── models/                    # Neuron, Synapse
-│   └── services/                  # сеть Nn, конфигурация, мутации, скрещивание, backprop
-├── main.go                        # демо: сравнение двух чисел
+│   └── services/                  # сеть, валидация, мутации, скрещивание, backprop
+├── cmd/demo/main.go               # демо: сравнение двух чисел
 └── train-data.csv                 # обучающие данные для демо
 ```
 
-> [!NOTE]
-> Сейчас пакеты лежат в `internal/`, а модуль называется `neural_network`.
-> Go не разрешает импортировать `internal`-пакеты из другого модуля, поэтому
-> для подключения в сторонние проекты публичные пакеты нужно вынести из `internal/`,
-> а модулю задать путь `github.com/sekerator/go-neural-network`.
+Публичное API — только корневой пакет `neuralnetwork`. Всё в `internal/` — детали реализации.
 
 ---
 
@@ -73,12 +83,11 @@ import (
 	"fmt"
 	"math"
 
-	"neural_network/internal"
-	"neural_network/internal/services"
+	neuralnetwork "github.com/Sekerator/go-neural-network"
 )
 
 func main() {
-	handler := internal.NewHandler(services.NnInitData{
+	handler := neuralnetwork.NewHandler(neuralnetwork.NnInitData{
 		InputNeuronCount:  2,
 		HiddenLayerCount:  2,
 		HiddenNeuronCount: []int{6, 4},
@@ -137,7 +146,7 @@ func main() {
 ### Обратное распространение ошибки
 
 ```go
-handler := internal.NewHandler(services.NnInitData{
+handler := neuralnetwork.NewHandler(neuralnetwork.NnInitData{
 	InputNeuronCount:  2,
 	HiddenLayerCount:  1,
 	HiddenNeuronCount: []int{4},
@@ -174,7 +183,7 @@ result, err := handler.GetResultBackpropagationNn([]float64{2, 7})
 
 ## Конфигурация сети
 
-`services.NnInitData`:
+`neuralnetwork.NnInitData`:
 
 | Поле | Тип | Описание |
 |---|---|---|
@@ -193,7 +202,7 @@ result, err := handler.GetResultBackpropagationNn([]float64{2, 7})
 
 ## Справочник API
 
-### `internal.Handler`
+### `Handler`
 
 | Метод | Описание |
 |---|---|
@@ -216,7 +225,7 @@ result, err := handler.GetResultBackpropagationNn([]float64{2, 7})
 | `TrainBackpropagationNn(iterationCount int, data [][][]float64) error` | Проходит по всем примерам `iterationCount` раз, обновляя веса после каждого примера |
 | `GetResultBackpropagationNn(input []float64) ([]float64, error)` | Возвращает выход сети для заданного входа |
 
-### `internal.Brain`
+### `Brain`
 
 Одна сеть эволюционной популяции.
 
@@ -225,21 +234,6 @@ result, err := handler.GetResultBackpropagationNn([]float64{2, 7})
 | `ID int` | Идентификатор сети в популяции |
 | `GetResult(input []float64) ([]float64, error)` | Возвращает выход сети |
 | `Mutate() error` | Случайно мутирует веса и смещения сети |
-
-### `services`
-
-Низкоуровневые типы, на которых построен `Handler`.
-
-| Тип / функция | Описание |
-|---|---|
-| `NnInitData.Validate() error` | Проверяет конфигурацию |
-| `NewNn(data) *Nn`, `(*Nn).Init() error` | Создание сети и построение топологии со случайными весами |
-| `(*Nn).SetInput(input) error` | Подаёт вход на входные нейроны |
-| `(*Nn).GetResults() []float64` | Прямой проход и значения выходных нейронов |
-| `(*Nn).Clone() *Nn` | Глубокая копия сети |
-| `NewEvolutionNn(data)`, `(*EvolutionNn).Mutate()` | Сеть для эволюции и её мутация |
-| `Cross(nn1, nn2 EvolutionNn, chance int)` | Новая сеть — копия `nn1`, в которой каждый ген с вероятностью `chance`% взят из `nn2` |
-| `NewBackpropagationNn(data)`, `(*BackpropagationNn).Train(expected)` | Сеть для backprop и один шаг обучения |
 
 ---
 
@@ -318,8 +312,10 @@ result, err := handler.GetResultBackpropagationNn([]float64{2, 7})
 Запуск:
 
 ```bash
-go run .
+go run ./cmd/demo
 ```
+
+Запускать нужно из корня репозитория: демо читает `train-data.csv` из текущей директории.
 
 Программа спросит число итераций обучения, затем пары чисел для проверки.
 Для выхода введите `1515` дважды.

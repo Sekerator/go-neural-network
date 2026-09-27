@@ -1,10 +1,10 @@
-package internal
+package neuralnetwork
 
 import (
 	"errors"
 	"fmt"
+	"github.com/Sekerator/go-neural-network/internal/services"
 	"math/rand"
-	"neural_network/internal/services"
 	"sort"
 	"sync"
 )

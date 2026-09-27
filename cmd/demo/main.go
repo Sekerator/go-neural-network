@@ -3,9 +3,8 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
+	neuralnetwork "github.com/Sekerator/go-neural-network"
 	"math"
-	"neural_network/internal"
-	"neural_network/internal/services"
 	"os"
 	"sort"
 	"strconv"
@@ -17,7 +16,7 @@ func main() {
 }
 
 func evolutionTest() {
-	data := services.NnInitData{
+	data := neuralnetwork.NnInitData{
 		InputNeuronCount:  2,
 		HiddenLayerCount:  3,
 		HiddenNeuronCount: []int{6, 4, 2},
@@ -30,7 +29,7 @@ func evolutionTest() {
 		MutationWeightRate: 0.05,
 	}
 
-	handler := internal.NewHandler(data)
+	handler := neuralnetwork.NewHandler(data)
 	brains, err := handler.CreateEvolutionNn(10000)
 	if err != nil {
 		panic(err)
@@ -140,7 +139,7 @@ func evolutionTest() {
 	}
 }
 
-func scoreBrains(brains map[int]*internal.Brain, trainData [][][]float64) map[int]float64 {
+func scoreBrains(brains map[int]*neuralnetwork.Brain, trainData [][][]float64) map[int]float64 {
 	var wg sync.WaitGroup
 	var sc sync.Mutex
 
@@ -175,7 +174,7 @@ func scoreBrains(brains map[int]*internal.Brain, trainData [][][]float64) map[in
 }
 
 func backpropagationTest() {
-	data := services.NnInitData{
+	data := neuralnetwork.NnInitData{
 		InputNeuronCount:  2,
 		HiddenLayerCount:  3,
 		HiddenNeuronCount: []int{6, 4, 2},
@@ -188,7 +187,7 @@ func backpropagationTest() {
 		MutationWeightRate: 0.05,
 	}
 
-	handler := internal.NewHandler(data)
+	handler := neuralnetwork.NewHandler(data)
 	err := handler.CreateBackpropagationNn()
 	if err != nil {
 		panic(err)

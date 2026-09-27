@@ -1,8 +1,10 @@
-package internal
+package neuralnetwork
 
 import (
-	"neural_network/internal/services"
+	"github.com/Sekerator/go-neural-network/internal/services"
 )
+
+type NnInitData = services.NnInitData
 
 type Handler struct {
 	data              services.NnInitData
@@ -11,7 +13,7 @@ type Handler struct {
 	brains map[int]*Brain
 }
 
-func NewHandler(data services.NnInitData) *Handler {
+func NewHandler(data NnInitData) *Handler {
 	return &Handler{
 		data: data,
 	}
