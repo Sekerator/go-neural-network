@@ -13,7 +13,7 @@ type Brain struct {
 	nn *services.EvolutionNn
 }
 
-func (h *Handler) CreateEvolutionNn(count int) (*map[int]*Brain, error) {
+func (h *Handler) CreateEvolutionNn(count int) (map[int]*Brain, error) {
 	var errorsList []error
 	var wg sync.WaitGroup
 	var sc sync.Mutex
@@ -22,7 +22,6 @@ func (h *Handler) CreateEvolutionNn(count int) (*map[int]*Brain, error) {
 
 	for i := range count {
 		go func() {
-
 			wg.Add(1)
 			sc.Lock()
 			h.brains[i] = &Brain{
@@ -30,7 +29,9 @@ func (h *Handler) CreateEvolutionNn(count int) (*map[int]*Brain, error) {
 				nn: services.NewEvolutionNn(h.data),
 			}
 			err := h.brains[i].nn.Init()
-			errorsList = append(errorsList, err)
+			if err != nil {
+				errorsList = append(errorsList, err)
+			}
 			wg.Done()
 			sc.Unlock()
 		}()
@@ -42,7 +43,7 @@ func (h *Handler) CreateEvolutionNn(count int) (*map[int]*Brain, error) {
 		return nil, errorsList[0]
 	}
 
-	return &h.brains, nil
+	return h.brains, nil
 }
 
 func (h *Handler) SetInputAllEvolutionNn(input []float64) error {
@@ -57,7 +58,9 @@ func (h *Handler) SetInputAllEvolutionNn(input []float64) error {
 		go func() {
 			wg.Add(1)
 			err := brain.nn.SetInput(input)
-			errorsList = append(errorsList, err)
+			if err != nil {
+				errorsList = append(errorsList, err)
+			}
 			wg.Done()
 		}()
 	}
@@ -71,20 +74,16 @@ func (h *Handler) SetInputAllEvolutionNn(input []float64) error {
 	return nil
 }
 
-func (b *Brain) SetInputEvolutionNn(input []float64) error {
+func (b *Brain) GetResult(input []float64) ([]float64, error) {
 	err := b.nn.SetInput(input)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return b.nn.GetResults(), nil
 }
 
-func (b *Brain) GetResultEvolutionNn() []float64 {
-	return b.nn.GetResults()
-}
-
-func (b *Brain) MutateEvolutionNn() error {
+func (b *Brain) Mutate() error {
 	return b.nn.Mutate()
 }
 
@@ -105,6 +104,8 @@ func (h *Handler) CrossEvolutionNn(intoId, fromId, fromIdDominationChance int) e
 
 func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
 	var errorsList []error
+	var wg sync.WaitGroup
+	var sc sync.Mutex
 
 	type Item struct {
 		Key   int
@@ -121,21 +122,32 @@ func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
 		return items[i].Value < items[j].Value
 	})
 
-	counter := 0
+	counter := -1
 	for _, item := range items {
-		if counter < len(items)/10 {
-			counter++
-			continue
-		} else if counter < len(items)/2 {
-			err := h.brains[item.Key].nn.Mutate()
-			errorsList = append(errorsList, err)
-		} else if counter < len(items) {
-			err := h.CrossEvolutionNn(item.Key, rand.Intn(len(h.brains)), 50)
-			errorsList = append(errorsList, err)
-		}
-
 		counter++
+		go func() {
+			wg.Add(1)
+			if counter < len(items)/10 {
+			} else if counter < len(items)/2 {
+				err := h.brains[item.Key].nn.Mutate()
+				if err != nil {
+					sc.Lock()
+					errorsList = append(errorsList, err)
+					sc.Unlock()
+				}
+			} else if counter < len(items) {
+				err := h.CrossEvolutionNn(item.Key, rand.Intn(len(h.brains)), 50)
+				if err != nil {
+					sc.Lock()
+					errorsList = append(errorsList, err)
+					sc.Unlock()
+				}
+			}
+			wg.Done()
+		}()
 	}
+
+	wg.Wait()
 
 	if len(errorsList) > 0 {
 		return errorsList[0]

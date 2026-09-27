@@ -7,10 +7,15 @@ import (
 	"neural_network/internal"
 	"neural_network/internal/services"
 	"os"
+	"sort"
 	"strconv"
+	"sync"
 )
 
 func main() {
+	var wg sync.WaitGroup
+	var sc sync.Mutex
+
 	data := services.NnInitData{
 		InputNeuronCount:  2,
 		HiddenLayerCount:  3,
@@ -25,12 +30,12 @@ func main() {
 	}
 
 	handler := internal.NewHandler(data)
-	_, err := handler.CreateEvolutionNn(10000)
+	brains, err := handler.CreateEvolutionNn(10000)
 	if err != nil {
 		panic(err)
 	}
 
-	var trainData [][]float64
+	var trainData [][][]float64
 
 	file, err := os.Open("train-data.csv")
 	if err != nil {
@@ -47,22 +52,123 @@ func main() {
 	}
 
 	for _, row := range records {
-		var a, b float64
+		var a, b, result float64
 		a, err = strconv.ParseFloat(row[0], 64)
 		b, err = strconv.ParseFloat(row[1], 64)
+		result, err = strconv.ParseFloat(row[2], 64)
 		if err != nil {
 			panic(err)
 		}
 
-		trainData = append(trainData, []float64{a, b})
+		trainData = append(trainData, [][]float64{{a, b}, {result}})
 	}
 
 	iterCount := 10000
 	fmt.Print("Введите количество итераций обучения: ")
 	fmt.Fscan(os.Stdin, &iterCount)
 
-	for range iterCount {
+	for i := range iterCount {
+		fmt.Print("Итерация: ")
+		fmt.Println(i)
+		scoreBoard := make(map[int]float64, len(brains))
 
+		for id, brain := range brains {
+			go func() {
+				wg.Add(1)
+				for _, tdata := range trainData {
+					results, err := brain.GetResult(tdata[0])
+					if err != nil {
+						panic(err)
+					}
+					if math.Round(results[0]) != tdata[1][0] {
+						sc.Lock()
+						scoreBoard[id]++
+						sc.Unlock()
+					}
+				}
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+
+		err = handler.TrainEvolutionNn(scoreBoard)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	scoreBoard := make(map[int]float64, len(brains))
+
+	for id, brain := range brains {
+		go func() {
+			wg.Add(1)
+			for _, tdata := range trainData {
+				results, err := brain.GetResult(tdata[0])
+				if err != nil {
+					panic(err)
+				}
+				if math.Round(results[0]) != tdata[1][0] {
+					sc.Lock()
+					scoreBoard[id]++
+					sc.Unlock()
+				}
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	type Item struct {
+		Key   int
+		Value float64
+	}
+
+	items := make([]Item, 0, len(scoreBoard))
+
+	for k, v := range scoreBoard {
+		items = append(items, Item{k, v})
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Value < items[j].Value
+	})
+
+	fmt.Println()
+	for {
+		var num1 float64
+		var num2 float64
+
+		fmt.Print("Введите 1 цифру для сравнения: ")
+		fmt.Fscan(os.Stdin, &num1)
+
+		fmt.Print("Введите 2 цифру для сравнения: ")
+		fmt.Fscan(os.Stdin, &num2)
+
+		if num1 == 1515 && num2 == 1515 {
+			break
+		}
+
+		results, err := brains[items[0].Key].GetResult([]float64{num1, num2})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Print("Результат: ")
+		if math.Round(results[0]) == 1 {
+			fmt.Println("Цифра 2 больше")
+			fmt.Println(results[0])
+			fmt.Println(math.Round(results[0]))
+		} else if math.Round(results[0]) == 0 {
+			fmt.Println("Равны")
+			fmt.Println(results[0])
+			fmt.Println(math.Round(results[0]))
+		} else if math.Round(results[0]) == -1 {
+			fmt.Println("Цифра 1 больше")
+			fmt.Println(results[0])
+			fmt.Println(math.Round(results[0]))
+		} else {
+			fmt.Println(results[0])
+			fmt.Println(math.Round(results[0]))
+		}
 	}
 }
 
