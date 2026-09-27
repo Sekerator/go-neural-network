@@ -17,9 +17,6 @@ func main() {
 }
 
 func evolutionTest() {
-	var wg sync.WaitGroup
-	var sc sync.Mutex
-
 	data := services.NnInitData{
 		InputNeuronCount:  2,
 		HiddenLayerCount:  3,
@@ -56,13 +53,18 @@ func evolutionTest() {
 	}
 
 	for _, row := range records {
-		var a, b, result float64
-		a, err = strconv.ParseFloat(row[0], 64)
-		b, err = strconv.ParseFloat(row[1], 64)
-		result, err = strconv.ParseFloat(row[2], 64)
-		if err != nil {
-			panic(err)
+		if len(row) < 3 {
+			panic(fmt.Sprintf("invalid row: %v", row))
 		}
+
+		var values [3]float64
+		for i := range values {
+			values[i], err = strconv.ParseFloat(row[i], 64)
+			if err != nil {
+				panic(err)
+			}
+		}
+		a, b, result := values[0], values[1], values[2]
 
 		trainData = append(trainData, [][]float64{{a, b}, {result}})
 	}
@@ -74,30 +76,7 @@ func evolutionTest() {
 	for i := range iterCount {
 		fmt.Print("Итерация: ")
 		fmt.Println(i)
-		scoreBoard := make(map[int]float64, len(brains))
-
-		for id, _ := range brains {
-			scoreBoard[id] = 0
-		}
-
-		for id, brain := range brains {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				for _, tdata := range trainData {
-					results, err := brain.GetResult(tdata[0])
-					if err != nil {
-						panic(err)
-					}
-					if math.Round(results[0]) == tdata[1][0] {
-						sc.Lock()
-						scoreBoard[id]++
-						sc.Unlock()
-					}
-				}
-			}()
-		}
-		wg.Wait()
+		scoreBoard := scoreBrains(brains, trainData)
 
 		err = handler.TrainEvolutionNn(scoreBoard)
 		if err != nil {
@@ -105,26 +84,7 @@ func evolutionTest() {
 		}
 	}
 
-	scoreBoard := make(map[int]float64, len(brains))
-
-	for id, brain := range brains {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for _, tdata := range trainData {
-				results, err := brain.GetResult(tdata[0])
-				if err != nil {
-					panic(err)
-				}
-				if math.Round(results[0]) == tdata[1][0] {
-					sc.Lock()
-					scoreBoard[id]++
-					sc.Unlock()
-				}
-			}
-		}()
-	}
-	wg.Wait()
+	scoreBoard := scoreBrains(brains, trainData)
 
 	type Item struct {
 		Key   int
@@ -138,7 +98,7 @@ func evolutionTest() {
 	}
 
 	sort.Slice(items, func(i, j int) bool {
-		return items[i].Value < items[j].Value
+		return items[i].Value > items[j].Value
 	})
 
 	fmt.Println()
@@ -180,6 +140,41 @@ func evolutionTest() {
 	}
 }
 
+// scoreBrains returns the number of correct answers for every brain.
+func scoreBrains(brains map[int]*internal.Brain, trainData [][][]float64) map[int]float64 {
+	var wg sync.WaitGroup
+	var sc sync.Mutex
+
+	scoreBoard := make(map[int]float64, len(brains))
+	for id := range brains {
+		scoreBoard[id] = 0
+	}
+
+	for id, brain := range brains {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			correct := 0.0
+			for _, tdata := range trainData {
+				results, err := brain.GetResult(tdata[0])
+				if err != nil {
+					panic(err)
+				}
+				if math.Round(results[0]) == tdata[1][0] {
+					correct++
+				}
+			}
+
+			sc.Lock()
+			scoreBoard[id] = correct
+			sc.Unlock()
+		}()
+	}
+	wg.Wait()
+
+	return scoreBoard
+}
+
 func backpropagationTest() {
 	data := services.NnInitData{
 		InputNeuronCount:  2,
@@ -217,13 +212,18 @@ func backpropagationTest() {
 	}
 
 	for _, row := range records {
-		var a, b, result float64
-		a, err = strconv.ParseFloat(row[0], 64)
-		b, err = strconv.ParseFloat(row[1], 64)
-		result, err = strconv.ParseFloat(row[2], 64)
-		if err != nil {
-			panic(err)
+		if len(row) < 3 {
+			panic(fmt.Sprintf("invalid row: %v", row))
 		}
+
+		var values [3]float64
+		for i := range values {
+			values[i], err = strconv.ParseFloat(row[i], 64)
+			if err != nil {
+				panic(err)
+			}
+		}
+		a, b, result := values[0], values[1], values[2]
 
 		trainData = append(trainData, [][]float64{{a, b}, {result}})
 	}

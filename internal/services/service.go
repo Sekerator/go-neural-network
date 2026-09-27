@@ -1,7 +1,6 @@
 package services
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"math/rand"
@@ -28,12 +27,8 @@ func (n *Nn) Init() error {
 	neuronId := 0
 	synapseId := 0
 
-	if n.data.InputNeuronCount <= 0 || n.data.OutputNeuronCount <= 0 {
-		return errors.New("input neuron count cannot be zero and negative")
-	}
-
-	if n.data.HiddenLayerCount != len(n.data.HiddenNeuronCount) {
-		return errors.New("hidden layer count not equal to hidden neuron count")
+	if err := n.data.Validate(); err != nil {
+		return err
 	}
 
 	n.HiddenLayers = make(map[int][]int)

@@ -49,7 +49,7 @@ func Cross(nn1, nn2 EvolutionNn, chance int) (EvolutionNn, error) {
 	}
 
 	for id, synapse := range result.Synapses {
-		if rand.Intn(101) < chance {
+		if rand.Intn(100) < chance {
 			synapse.Weight = nn2.Synapses[id].Weight
 		}
 	}

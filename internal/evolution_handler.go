@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
 	"neural_network/internal/services"
 	"sort"
@@ -18,11 +19,15 @@ func (h *Handler) CreateEvolutionNn(count int) (map[int]*Brain, error) {
 		return nil, errors.New("count must be greater than 0")
 	}
 
+	if err := h.data.Validate(); err != nil {
+		return nil, err
+	}
+
 	var errorsList []error
 	var wg sync.WaitGroup
 	var sc sync.Mutex
 
-	h.brains = make(map[int]*Brain, count)
+	brains := make(map[int]*Brain, count)
 
 	for i := range count {
 		wg.Add(1)
@@ -45,7 +50,7 @@ func (h *Handler) CreateEvolutionNn(count int) (map[int]*Brain, error) {
 			}
 
 			sc.Lock()
-			h.brains[i] = brain
+			brains[i] = brain
 			sc.Unlock()
 
 		}()
@@ -56,6 +61,8 @@ func (h *Handler) CreateEvolutionNn(count int) (map[int]*Brain, error) {
 	if len(errorsList) > 0 {
 		return nil, errors.Join(errorsList...)
 	}
+
+	h.brains = brains
 
 	return h.brains, nil
 }
@@ -105,9 +112,15 @@ func (b *Brain) Mutate() error {
 	return b.nn.Mutate()
 }
 
-func (h *Handler) CrossEvolutionNn(intoBrain, fromBrain Brain, fromIdDominationChance int) error {
-	if len(h.brains) == 0 {
-		return errors.New("no brains")
+func (h *Handler) CrossEvolutionNn(intoId, fromId, fromIdDominationChance int) error {
+	intoBrain, ok := h.brains[intoId]
+	if !ok {
+		return fmt.Errorf("brain %d not found", intoId)
+	}
+
+	fromBrain, ok := h.brains[fromId]
+	if !ok {
+		return fmt.Errorf("brain %d not found", fromId)
 	}
 
 	nn, err := services.Cross(*intoBrain.nn, *fromBrain.nn, fromIdDominationChance)
@@ -115,11 +128,14 @@ func (h *Handler) CrossEvolutionNn(intoBrain, fromBrain Brain, fromIdDominationC
 		return err
 	}
 
-	h.brains[intoBrain.ID].nn = &nn
+	intoBrain.nn = &nn
 
 	return nil
 }
 
+// TrainEvolutionNn runs one generation. scoreBoard must contain a score for every brain,
+// a higher score means a better brain. The best 10% (at least one) are kept, the rest
+// of the first half is mutated and the second half is crossed with the best ones.
 func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
 	var errorsList []error
 	var wg sync.WaitGroup
@@ -148,11 +164,10 @@ func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
 		return items[i].Value > items[j].Value
 	})
 
+	// Top brains are neither mutated nor crossed in this generation,
+	// so they can be read concurrently as crossing donors.
 	top := items[:max(1, len(items)/10)]
-	topBrains := make([]Brain, len(top))
-	for i := range topBrains {
-		topBrains[i] = *h.brains[top[i].Key]
-	}
+	mutateCount := max(len(top), len(items)/2)
 
 	counter := -1
 	for _, item := range items {
@@ -160,8 +175,8 @@ func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
 		wg.Add(1)
 		go func(counterGo int) {
 			defer wg.Done()
-			if counterGo < len(items)/10 {
-			} else if counterGo < len(items)/2 {
+			if counterGo < len(top) {
+			} else if counterGo < mutateCount {
 				err := h.brains[item.Key].nn.Mutate()
 				if err != nil {
 					sc.Lock()
@@ -169,7 +184,7 @@ func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
 					sc.Unlock()
 				}
 			} else if counterGo < len(items) {
-				err := h.CrossEvolutionNn(*h.brains[item.Key], topBrains[rand.Intn(len(top))], 50)
+				err := h.CrossEvolutionNn(item.Key, top[rand.Intn(len(top))].Key, 50)
 				if err != nil {
 					sc.Lock()
 					errorsList = append(errorsList, err)

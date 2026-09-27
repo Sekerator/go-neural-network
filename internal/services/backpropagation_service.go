@@ -15,15 +15,17 @@ func NewBackpropagationNn(data NnInitData) *BackpropagationNn {
 	}
 }
 
-func (n *BackpropagationNn) Train(expectedData []float64) error {
-	if len(expectedData) != n.data.OutputNeuronCount {
+func (n *BackpropagationNn) Train(expectedDataOriginal []float64) error {
+	if len(expectedDataOriginal) != n.data.OutputNeuronCount {
 		return errors.New("expected data length must be equal to output length")
 	}
 
-	for i := range expectedData {
-		if expectedData[i] > 1 || expectedData[i] < -1 {
-			expectedData[i] = math.Tanh(expectedData[i])
+	expectedData := make([]float64, len(expectedDataOriginal))
+	for i, value := range expectedDataOriginal {
+		if value > 1 || value < -1 {
+			value = math.Tanh(value)
 		}
+		expectedData[i] = value
 	}
 
 	n.CalculateResults()
