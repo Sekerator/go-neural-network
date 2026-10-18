@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"math"
 )
 
 type NnInitData struct {
@@ -32,6 +33,12 @@ func (d NnInitData) Validate() error {
 	for i, count := range d.HiddenNeuronCount {
 		if count <= 0 {
 			return fmt.Errorf("hidden layer %d neuron count must be positive, got %d", i, count)
+		}
+	}
+
+	for _, rate := range []float64{d.MutationBiasRate, d.MutationWeightRate} {
+		if math.IsNaN(rate) || math.IsInf(rate, 0) {
+			return errors.New("mutation rates must be finite numbers")
 		}
 	}
 

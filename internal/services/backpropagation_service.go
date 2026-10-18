@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"math"
 )
 
@@ -22,6 +23,9 @@ func (n *BackpropagationNn) Train(expectedDataOriginal []float64) error {
 
 	expectedData := make([]float64, len(expectedDataOriginal))
 	for i, value := range expectedDataOriginal {
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return fmt.Errorf("expected value %v at index %d is not a finite number", value, i)
+		}
 		if value > 1 || value < -1 {
 			value = math.Tanh(value)
 		}

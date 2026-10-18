@@ -234,6 +234,12 @@ func (n *Nn) SetInput(inputDataOriginal []float64) error {
 		)
 	}
 
+	for i, value := range inputDataOriginal {
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return fmt.Errorf("input value %v at index %d is not a finite number", value, i)
+		}
+	}
+
 	inputData := make([]float64, len(inputDataOriginal))
 	copy(inputData, inputDataOriginal)
 

@@ -27,6 +27,8 @@ func evolutionTest() {
 
 		MutationBiasRate:   0.05,
 		MutationWeightRate: 0.05,
+
+		Normalize: true,
 	}
 
 	handler := neuralnetwork.NewHandler(data)
@@ -185,6 +187,8 @@ func backpropagationTest() {
 
 		MutationBiasRate:   0.05,
 		MutationWeightRate: 0.05,
+
+		Normalize: true,
 	}
 
 	handler := neuralnetwork.NewHandler(data)
