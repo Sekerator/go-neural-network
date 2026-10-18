@@ -130,10 +130,6 @@ func (h *Handler) CrossEvolutionNn(intoId, fromId, fromIdDominationChance int) e
 	}
 
 	intoBrain.nn = &nn
-	err = intoBrain.nn.Mutate()
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
