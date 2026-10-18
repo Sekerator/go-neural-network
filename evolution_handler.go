@@ -10,6 +10,11 @@ import (
 	"github.com/Sekerator/go-neural-network/internal/services"
 )
 
+const (
+	cloneTopChance   = 30
+	crossDonorChance = 50
+)
+
 type Brain struct {
 	ID int
 	nn *services.EvolutionNn
@@ -171,21 +176,27 @@ func (h *Handler) TrainEvolutionNn(scoreBoard map[int]float64) error {
 		wg.Add(1)
 		go func(counterGo int) {
 			defer wg.Done()
-			if counterGo < len(top) {
-			} else if counterGo < mutateCount {
-				err := h.brains[item.Key].nn.Mutate()
-				if err != nil {
-					sc.Lock()
-					errorsList = append(errorsList, err)
-					sc.Unlock()
+
+			var err error
+			switch {
+			case counterGo < len(top):
+			case counterGo < mutateCount:
+				err = h.brains[item.Key].nn.Mutate()
+			case rand.Intn(100) < cloneTopChance:
+				child := h.brains[top[rand.Intn(len(top))].Key].nn.CloneEvo()
+				if child == nil {
+					err = errors.New("failed to clone nn")
+				} else if err = child.Mutate(); err == nil {
+					h.brains[item.Key].nn = child
 				}
-			} else if counterGo < len(items) {
-				err := h.CrossEvolutionNn(item.Key, top[rand.Intn(len(top))].Key, 50)
-				if err != nil {
-					sc.Lock()
-					errorsList = append(errorsList, err)
-					sc.Unlock()
-				}
+			default:
+				err = h.CrossEvolutionNn(item.Key, top[rand.Intn(len(top))].Key, crossDonorChance)
+			}
+
+			if err != nil {
+				sc.Lock()
+				errorsList = append(errorsList, err)
+				sc.Unlock()
 			}
 		}(counter)
 	}

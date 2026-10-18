@@ -2,8 +2,9 @@ package services
 
 import (
 	"errors"
-	"github.com/Sekerator/go-neural-network/internal/models"
 	"math/rand"
+
+	"github.com/Sekerator/go-neural-network/internal/models"
 )
 
 type EvolutionNn struct {
@@ -55,4 +56,15 @@ func Cross(nn1, nn2 EvolutionNn, chance int) (EvolutionNn, error) {
 	}
 
 	return EvolutionNn{Nn: result}, nil
+}
+
+func (n *EvolutionNn) CloneEvo() *EvolutionNn {
+	nn := n.Nn.Clone()
+	if nn == nil {
+		return nil
+	}
+
+	return &EvolutionNn{
+		Nn: nn,
+	}
 }
