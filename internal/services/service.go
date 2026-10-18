@@ -2,9 +2,10 @@ package services
 
 import (
 	"fmt"
-	"github.com/Sekerator/go-neural-network/internal/models"
 	"math"
 	"math/rand"
+
+	"github.com/Sekerator/go-neural-network/internal/models"
 )
 
 type Nn struct {
@@ -236,14 +237,16 @@ func (n *Nn) SetInput(inputDataOriginal []float64) error {
 	inputData := make([]float64, len(inputDataOriginal))
 	copy(inputData, inputDataOriginal)
 
-	maxInput := 0.0
-	for _, value := range inputData {
-		maxInput = math.Max(maxInput, math.Abs(value))
-	}
+	if n.data.Normalize {
+		maxInput := 0.0
+		for _, value := range inputData {
+			maxInput = math.Max(maxInput, math.Abs(value))
+		}
 
-	if maxInput != 0 {
-		for i := range inputData {
-			inputData[i] /= maxInput
+		if maxInput != 0 {
+			for i := range inputData {
+				inputData[i] /= maxInput
+			}
 		}
 	}
 
