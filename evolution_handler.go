@@ -3,10 +3,11 @@ package neuralnetwork
 import (
 	"errors"
 	"fmt"
-	"github.com/Sekerator/go-neural-network/internal/services"
 	"math/rand"
 	"sort"
 	"sync"
+
+	"github.com/Sekerator/go-neural-network/internal/services"
 )
 
 type Brain struct {
@@ -129,6 +130,10 @@ func (h *Handler) CrossEvolutionNn(intoId, fromId, fromIdDominationChance int) e
 	}
 
 	intoBrain.nn = &nn
+	err = intoBrain.nn.Mutate()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
