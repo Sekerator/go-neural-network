@@ -16,6 +16,8 @@ type NnInitData struct {
 
 	MutationBiasRate   float64
 	MutationWeightRate float64
+
+	Normalize bool
 }
 
 func (d NnInitData) Validate() error {
