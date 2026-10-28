@@ -225,9 +225,9 @@ func sameKeys[A any, B any](a map[int]A, b map[int]B) bool {
 }
 
 func (b *Brain) Export() ([]byte, error) {
-	return b.Export()
+	return b.nn.Export()
 }
 
 func (b *Brain) Import(data []byte) error {
-	return b.Import(data)
+	return b.nn.Import(data)
 }

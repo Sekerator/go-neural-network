@@ -55,9 +55,9 @@ func (h *Handler) GetResultBackpropagationNn(input []float64) ([]float64, error)
 }
 
 func (h *Handler) Export() ([]byte, error) {
-	return h.Export()
+	return h.backpropagationNn.Export()
 }
 
 func (h *Handler) Import(data []byte) error {
-	return h.Import(data)
+	return h.backpropagationNn.Import(data)
 }
