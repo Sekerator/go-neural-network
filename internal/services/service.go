@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json/v2"
 	"fmt"
 	"math"
 	"math/rand"
@@ -260,6 +261,24 @@ func (n *Nn) SetInput(inputDataOriginal []float64) error {
 	for _, neuronId := range n.InputNeurons {
 		n.Neurons[neuronId].Result = inputData[i]
 		i++
+	}
+
+	return nil
+}
+
+func (n *Nn) Export() ([]byte, error) {
+	data, err := json.Marshal(n)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func (n *Nn) Import(data []byte) error {
+	err := json.Unmarshal(data, n)
+	if err != nil {
+		return err
 	}
 
 	return nil
