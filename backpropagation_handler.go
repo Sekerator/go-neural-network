@@ -2,6 +2,7 @@ package neuralnetwork
 
 import (
 	"errors"
+
 	"github.com/Sekerator/go-neural-network/internal/services"
 )
 
@@ -51,4 +52,12 @@ func (h *Handler) GetResultBackpropagationNn(input []float64) ([]float64, error)
 	}
 
 	return h.backpropagationNn.GetResults(), nil
+}
+
+func (h *Handler) Export() ([]byte, error) {
+	return h.Export()
+}
+
+func (h *Handler) Import(data []byte) error {
+	return h.Import(data)
 }
