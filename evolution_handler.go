@@ -231,3 +231,27 @@ func (b *Brain) Export() ([]byte, error) {
 func (b *Brain) Import(data []byte) error {
 	return b.nn.Import(data)
 }
+
+func (b *Brain) ExportToFile(userPath *string) error {
+	var path string
+
+	if userPath == nil {
+		path = "./export/neural-network.json"
+	} else {
+		path = *userPath
+	}
+
+	return b.nn.ExportToFile(path)
+}
+
+func (b *Brain) ImportFromFile(userPath *string) error {
+	var path string
+
+	if userPath == nil {
+		path = "./export/neural-network.json"
+	} else {
+		path = *userPath
+	}
+
+	return b.nn.ImportFromFile(path)
+}

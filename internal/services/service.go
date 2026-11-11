@@ -1,10 +1,11 @@
 package services
 
 import (
-	"encoding/json/v2"
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/rand"
+	"os"
 
 	"github.com/Sekerator/go-neural-network/internal/models"
 )
@@ -275,8 +276,31 @@ func (n *Nn) Export() ([]byte, error) {
 	return data, nil
 }
 
+func (n *Nn) ExportToFile(path string) error {
+	data, err := n.Export()
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, data, 0644)
+}
+
 func (n *Nn) Import(data []byte) error {
 	err := json.Unmarshal(data, n)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (n *Nn) ImportFromFile(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	err = n.Import(data)
 	if err != nil {
 		return err
 	}
